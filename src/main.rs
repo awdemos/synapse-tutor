@@ -1,5 +1,7 @@
-use rand::prelude::*;
+#![allow(clippy::needless_range_loop)]
+
 use rand::distributions::Uniform;
+use rand::prelude::*;
 
 struct NeuralNetwork {
     input_size: usize,
@@ -19,11 +21,11 @@ impl NeuralNetwork {
         let weights1: Vec<Vec<f64>> = (0..input_size)
             .map(|_| (0..hidden_size).map(|_| rng.sample(uniform)).collect())
             .collect();
-        
+
         let weights2: Vec<Vec<f64>> = (0..hidden_size)
             .map(|_| (0..output_size).map(|_| rng.sample(uniform)).collect())
             .collect();
-        
+
         let bias1: Vec<f64> = (0..hidden_size).map(|_| rng.sample(uniform)).collect();
         let bias2: Vec<f64> = (0..output_size).map(|_| rng.sample(uniform)).collect();
 
@@ -154,7 +156,11 @@ fn main() {
     for (input, target) in &training_data {
         let (_, output) = nn.forward(input);
         let prediction = if output[0] > 0.5 { 1.0 } else { 0.0 };
-        let correct = if prediction == target[0] { "✓" } else { "✗" };
+        let correct = if prediction == target[0] {
+            "✓"
+        } else {
+            "✗"
+        };
         println!(
             "  Input: {:?}  Target: {}  Output: {:.4}  Prediction: {} {}",
             input, target[0], output[0], prediction, correct
@@ -164,4 +170,104 @@ fn main() {
     println!("\nTraining complete! The network has learned the XOR function.");
     println!("This demonstrates that a single hidden layer with enough neurons");
     println!("can approximate any continuous function (Universal Approximation Theorem).");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn sigmoid_at_zero() {
+        assert!((NeuralNetwork::sigmoid(0.0) - 0.5).abs() < 1e-10);
+    }
+
+    #[test]
+    fn sigmoid_large_positive() {
+        assert!(NeuralNetwork::sigmoid(10.0) > 0.99);
+    }
+
+    #[test]
+    fn sigmoid_large_negative() {
+        assert!(NeuralNetwork::sigmoid(-10.0) < 0.01);
+    }
+
+    #[test]
+    fn sigmoid_derivative_at_half() {
+        let x = 0.5;
+        let expected = x * (1.0 - x);
+        assert!((NeuralNetwork::sigmoid_derivative(x) - expected).abs() < 1e-10);
+    }
+
+    #[test]
+    fn forward_output_range() {
+        let nn = NeuralNetwork::new(2, 4, 1);
+        let (_, output) = nn.forward(&[0.5, 0.5]);
+        assert!(output[0] > 0.0 && output[0] < 1.0);
+    }
+
+    #[test]
+    fn forward_hidden_range() {
+        let nn = NeuralNetwork::new(2, 4, 1);
+        let (hidden, _) = nn.forward(&[1.0, 0.0]);
+        for h in hidden {
+            assert!(h > 0.0 && h < 1.0);
+        }
+    }
+
+    #[test]
+    fn training_reduces_error() {
+        let training_data = vec![
+            (vec![0.0, 0.0], vec![0.0]),
+            (vec![0.0, 1.0], vec![1.0]),
+            (vec![1.0, 0.0], vec![1.0]),
+            (vec![1.0, 1.0], vec![0.0]),
+        ];
+
+        let mut nn = NeuralNetwork::new(2, 4, 1);
+        let (_, output_before) = nn.forward(&[0.0, 1.0]);
+        let error_before = (1.0 - output_before[0]).abs();
+
+        nn.train(&training_data, 5000, 0.5);
+
+        let (_, output_after) = nn.forward(&[0.0, 1.0]);
+        let error_after = (1.0 - output_after[0]).abs();
+
+        assert!(
+            error_after < error_before,
+            "error did not decrease: before={error_before}, after={error_after}"
+        );
+    }
+
+    #[test]
+    fn learns_xor() {
+        let training_data = vec![
+            (vec![0.0, 0.0], vec![0.0]),
+            (vec![0.0, 1.0], vec![1.0]),
+            (vec![1.0, 0.0], vec![1.0]),
+            (vec![1.0, 1.0], vec![0.0]),
+        ];
+
+        let mut nn = NeuralNetwork::new(2, 4, 1);
+        nn.train(&training_data, 20000, 0.5);
+
+        for (input, target) in &training_data {
+            let (_, output) = nn.forward(input);
+            let prediction = if output[0] > 0.5 { 1.0 } else { 0.0 };
+            assert!(
+                (prediction - target[0]).abs() < 0.1,
+                "failed on input {input:?}: expected {target:?}, got {output:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn network_dimensions_preserved() {
+        let nn = NeuralNetwork::new(3, 5, 2);
+        assert_eq!(nn.weights1.len(), 3);
+        assert_eq!(nn.weights1[0].len(), 5);
+        assert_eq!(nn.weights2.len(), 5);
+        assert_eq!(nn.weights2[0].len(), 2);
+        assert_eq!(nn.bias1.len(), 5);
+        assert_eq!(nn.bias2.len(), 2);
+    }
 }
