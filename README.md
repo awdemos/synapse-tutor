@@ -24,7 +24,7 @@ This project is perfect for:
 ### Clone & Run
 
 ```bash
-git clone https://github.com/yourusername/synapse-tutor.git
+git clone https://github.com/awdemos/synapse-tutor.git
 cd synapse-tutor
 cargo run --release
 ```

@@ -2,10 +2,10 @@
 name = "synapse-tutor"
 version = "0.1.0"
 edition = "2021"
-authors = ["Your Name <your.email@example.com>"]
+authors = ["Andrew Demos <andrew@kvcachestore.com>"]
 description = "A simple neural network implementation in Rust that learns the XOR function using backpropagation"
 license = "MIT"
-repository = "https://github.com/yourusername/synapse-tutor"
+repository = "https://github.com/awdemos/synapse-tutor"
 keywords = ["neural-network", "machine-learning", "rust", "xor", "backpropagation"]
 categories = ["science", "algorithms"]
 rust-version = "1.70"
