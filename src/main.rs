@@ -113,8 +113,9 @@ impl NeuralNetwork {
             }
 
             if epoch % 1000 == 0 {
-                let mse = total_error / training_data.len() as f64;
-                println!("Epoch {:5}: MSE = {:.6}", epoch, mse);
+                let count = training_data.len();
+                let mse = total_error / count as f64;
+                println!("Epoch {epoch:5}: MSE = {mse:.6}");
             }
         }
     }
@@ -156,7 +157,7 @@ fn main() {
     for (input, target) in &training_data {
         let (_, output) = nn.forward(input);
         let prediction = if output[0] > 0.5 { 1.0 } else { 0.0 };
-        let correct = if prediction == target[0] {
+        let correct = if (prediction - target[0]).abs() < f64::EPSILON {
             "✓"
         } else {
             "✗"
